@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
 import {
+  Check,
   Compass,
+  Copy,
+  ExternalLink,
   LogIn,
   LogOut,
   MessageSquareText,
@@ -9,6 +12,7 @@ import {
   Store,
   Ticket,
 } from 'lucide-react';
+import firebaseConfig from '../firebase-applet-config.json';
 import { BusinessOwnerView } from './components/BusinessOwnerView';
 import { CustomerDiscoveryView } from './components/CustomerDiscoveryView';
 import { FeedbackModal } from './components/FeedbackModal';
@@ -156,19 +160,43 @@ export default function App() {
     setTimeout(() => setSyncNotice(null), 2800);
   };
 
+  const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState(false);
+
   const handleGoogleSignIn = async () => {
     setAuthError(null);
+    setUnauthorizedDomain(null);
     setSigningIn(true);
     try {
       await signInWithPopup(auth, googleProvider);
       showNotice('Signed in & synced with Cloud Firestore');
     } catch (error) {
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error
+          ? String((error as { code?: unknown }).code)
+          : '';
       const msg = error instanceof Error ? error.message : 'Google sign-in failed.';
-      if (!msg.includes('popup-closed-by-user')) {
+      if (code === 'auth/unauthorized-domain' || msg.includes('auth/unauthorized-domain')) {
+        setUnauthorizedDomain(window.location.hostname);
+        setAuthError(
+          `Domain "${window.location.hostname}" is not yet in Firebase Auth Authorized domains.`
+        );
+      } else if (!msg.includes('popup-closed-by-user')) {
         setAuthError(msg);
       }
     } finally {
       setSigningIn(false);
+    }
+  };
+
+  const handleCopyDomain = async () => {
+    if (!unauthorizedDomain) return;
+    try {
+      await navigator.clipboard.writeText(unauthorizedDomain);
+      setCopiedDomain(true);
+      setTimeout(() => setCopiedDomain(false), 2000);
+    } catch {
+      // Ignore clipboard failures
     }
   };
 
@@ -421,7 +449,47 @@ export default function App() {
                 Browse the Dehradun sample feed below right now, or connect your Google account to persist offers and redemptions in Cloud Firestore.
               </p>
               {authError && (
-                <p className="text-xs font-medium text-red-700 pt-1">{authError}</p>
+                <div className="rounded-xl bg-red-50 border border-red-200 p-3.5 text-xs text-red-900 space-y-2 mt-2">
+                  <p className="font-semibold">{authError}</p>
+                  {unauthorizedDomain && (
+                    <div className="space-y-2">
+                      <p className="text-red-800">
+                        Add this hostname under Firebase Console → Authentication → Settings → Authorized domains:
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <code className="px-2.5 py-1 rounded-lg bg-white border border-red-200 font-mono text-[11px] text-slate-900">
+                          {unauthorizedDomain}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={handleCopyDomain}
+                          className="min-h-[34px] px-2.5 py-1 rounded-lg bg-white border border-red-200 text-slate-800 font-medium flex items-center gap-1 hover:bg-red-100/50 transition-colors"
+                        >
+                          {copiedDomain ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-700" />
+                              <span>Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Copy Domain</span>
+                            </>
+                          )}
+                        </button>
+                        <a
+                          href={`https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/settings`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="min-h-[34px] px-2.5 py-1 rounded-lg bg-slate-900 text-white font-medium flex items-center gap-1 hover:bg-slate-800 transition-colors"
+                        >
+                          <span>Open Authorized Domains</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             <button
