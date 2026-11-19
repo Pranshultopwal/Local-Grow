@@ -1,0 +1,418 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user profile storing Google identity and preferred demo role.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "preferredRole": {
+          "type": "string",
+          "enum": ["customer", "owner"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "email", "preferredRole", "createdAt", "updatedAt"]
+    },
+    "Offer": {
+      "title": "Offer",
+      "description": "Local Dehradun business promotion with transparent INR pricing and engagement counters.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "businessName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "neighborhood": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "distanceKm": {
+          "type": "number"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Cafés", "Salons", "Retail", "Boutiques"]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "originalPrice": {
+          "type": "number"
+        },
+        "offerPrice": {
+          "type": "number"
+        },
+        "validityLabel": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 80
+        },
+        "targetAudience": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "rating": {
+          "type": "number"
+        },
+        "reviewCount": {
+          "type": "number"
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "redemptionCodePrefix": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 12,
+          "pattern": "^[A-Z0-9]+$"
+        },
+        "views": {
+          "type": "number"
+        },
+        "claims": {
+          "type": "number"
+        },
+        "whatsappShares": {
+          "type": "number"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "reviews": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "businessName",
+        "neighborhood",
+        "distanceKm",
+        "category",
+        "title",
+        "description",
+        "originalPrice",
+        "offerPrice",
+        "validityLabel",
+        "targetAudience",
+        "rating",
+        "reviewCount",
+        "imageUrl",
+        "redemptionCodePrefix",
+        "views",
+        "claims",
+        "whatsappShares",
+        "active",
+        "reviews",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LoyaltyProgram": {
+      "title": "LoyaltyProgram",
+      "description": "Shop repeat-visit loyalty perk configured by a local business owner.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "businessName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "neighborhood": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Cafés", "Salons", "Retail", "Boutiques"]
+        },
+        "visitsRequired": {
+          "type": "number"
+        },
+        "rewardTitle": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "businessName",
+        "neighborhood",
+        "category",
+        "visitsRequired",
+        "rewardTitle",
+        "active",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ClaimedOffer": {
+      "title": "ClaimedOffer",
+      "description": "Customer claimed offer code stored privately under their user profile.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "offerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "businessName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "neighborhood": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "offerPrice": {
+          "type": "number"
+        },
+        "originalPrice": {
+          "type": "number"
+        },
+        "code": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 24,
+          "pattern": "^[A-Z0-9\\-]+$"
+        },
+        "redeemedInStore": {
+          "type": "boolean"
+        },
+        "claimedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "offerId",
+        "businessName",
+        "neighborhood",
+        "title",
+        "offerPrice",
+        "originalPrice",
+        "code",
+        "redeemedInStore",
+        "claimedAt",
+        "updatedAt"
+      ]
+    },
+    "LoyaltyCard": {
+      "title": "LoyaltyCard",
+      "description": "User-specific visit stamp progress for a Dehradun shop loyalty program.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "programId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "businessName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "neighborhood": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Cafés", "Salons", "Retail", "Boutiques"]
+        },
+        "visitsRequired": {
+          "type": "number"
+        },
+        "currentStamps": {
+          "type": "number"
+        },
+        "rewardTitle": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "programId",
+        "businessName",
+        "neighborhood",
+        "category",
+        "visitsRequired",
+        "currentStamps",
+        "rewardTitle",
+        "updatedAt"
+      ]
+    },
+    "FeedbackEntry": {
+      "title": "FeedbackEntry",
+      "description": "MVP validation feedback submitted via Quick Feedback / Would You Pay modal.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "roleAtSubmission": {
+          "type": "string",
+          "enum": ["customer", "owner"]
+        },
+        "savesTimeAndMoney": {
+          "type": "string",
+          "enum": ["yes", "somewhat", "no"]
+        },
+        "willingToPay": {
+          "type": "string",
+          "enum": ["pass_49", "pay_per_deal", "free_only", "owner_499"]
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "isPublic": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "roleAtSubmission",
+        "savesTimeAndMoney",
+        "willingToPay",
+        "comment",
+        "isPublic",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user account documents (PII isolated to owner)."
+    },
+    "/users/{userId}/claims/{claimId}": {
+      "schema": { "$ref": "#/entities/ClaimedOffer" },
+      "description": "User claimed deal codes with terminal redemption lock."
+    },
+    "/users/{userId}/loyaltyCards/{programId}": {
+      "schema": { "$ref": "#/entities/LoyaltyCard" },
+      "description": "User loyalty stamp cards linked to shop loyaltyPrograms."
+    },
+    "/offers/{offerId}": {
+      "schema": { "$ref": "#/entities/Offer" },
+      "description": "Dehradun local business deals and engagement metrics."
+    },
+    "/loyaltyPrograms/{programId}": {
+      "schema": { "$ref": "#/entities/LoyaltyProgram" },
+      "description": "Shop repeat-visit loyalty perk definitions."
+    },
+    "/feedback/{feedbackId}": {
+      "schema": { "$ref": "#/entities/FeedbackEntry" },
+      "description": "Tester validation feedback (no PII stored)."
+    }
+  }
+}

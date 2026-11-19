@@ -1,0 +1,314 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection diagnostic probe
+    match /test/connection {
+      allow get: if isSignedIn();
+    }
+
+    // Reusable Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidCategory(cat) {
+      return cat in ['Cafés', 'Salons', 'Retail', 'Boutiques'];
+    }
+
+    // Entity Validators (Validation Blueprints)
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'preferredRole', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'preferredRole', 'createdAt', 'updatedAt']) &&
+        data.uid is string && isValidId(data.uid) &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+        data.preferredRole in ['customer', 'owner'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidOffer(data) {
+      return data.keys().hasAll([
+          'ownerId', 'businessName', 'neighborhood', 'distanceKm', 'category',
+          'title', 'description', 'originalPrice', 'offerPrice', 'validityLabel',
+          'targetAudience', 'rating', 'reviewCount', 'imageUrl', 'redemptionCodePrefix',
+          'views', 'claims', 'whatsappShares', 'active', 'reviews', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'businessName', 'neighborhood', 'distanceKm', 'category',
+          'title', 'description', 'originalPrice', 'offerPrice', 'validityLabel',
+          'targetAudience', 'rating', 'reviewCount', 'imageUrl', 'redemptionCodePrefix',
+          'views', 'claims', 'whatsappShares', 'active', 'reviews', 'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerId is string && isValidId(data.ownerId) &&
+        data.businessName is string && data.businessName.size() >= 2 && data.businessName.size() <= 80 &&
+        data.neighborhood is string && data.neighborhood.size() >= 2 && data.neighborhood.size() <= 60 &&
+        data.distanceKm is number && data.distanceKm >= 0 && data.distanceKm <= 50 &&
+        data.category is string && isValidCategory(data.category) &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 120 &&
+        data.description is string && data.description.size() <= 500 &&
+        data.originalPrice is number && data.originalPrice >= 50 && data.originalPrice <= 50000 &&
+        data.offerPrice is number && data.offerPrice >= 10 && data.offerPrice <= data.originalPrice &&
+        data.validityLabel is string && data.validityLabel.size() >= 3 && data.validityLabel.size() <= 80 &&
+        data.targetAudience is string && data.targetAudience.size() <= 100 &&
+        data.rating is number && data.rating >= 0 && data.rating <= 5 &&
+        data.reviewCount is int && data.reviewCount >= 0 && data.reviewCount <= 100000 &&
+        data.imageUrl is string && data.imageUrl.size() <= 300 &&
+        data.redemptionCodePrefix is string && data.redemptionCodePrefix.size() >= 2 && data.redemptionCodePrefix.size() <= 12 && data.redemptionCodePrefix.matches('^[A-Z0-9]+$') &&
+        data.views is int && data.views >= 0 &&
+        data.claims is int && data.claims >= 0 &&
+        data.whatsappShares is int && data.whatsappShares >= 0 &&
+        data.active is bool &&
+        data.reviews is list && data.reviews.size() <= 10 &&
+        (data.reviews.size() == 0 || data.reviews[0] is map) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidLoyaltyProgram(data) {
+      return data.keys().hasAll([
+          'ownerId', 'businessName', 'neighborhood', 'category',
+          'visitsRequired', 'rewardTitle', 'active', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'businessName', 'neighborhood', 'category',
+          'visitsRequired', 'rewardTitle', 'active', 'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerId is string && isValidId(data.ownerId) &&
+        data.businessName is string && data.businessName.size() >= 2 && data.businessName.size() <= 80 &&
+        data.neighborhood is string && data.neighborhood.size() >= 2 && data.neighborhood.size() <= 60 &&
+        data.category is string && isValidCategory(data.category) &&
+        data.visitsRequired is int && data.visitsRequired >= 2 && data.visitsRequired <= 10 &&
+        data.rewardTitle is string && data.rewardTitle.size() >= 3 && data.rewardTitle.size() <= 120 &&
+        data.active is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidClaim(data) {
+      return data.keys().hasAll([
+          'userId', 'offerId', 'businessName', 'neighborhood', 'title',
+          'offerPrice', 'originalPrice', 'code', 'redeemedInStore', 'claimedAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'offerId', 'businessName', 'neighborhood', 'title',
+          'offerPrice', 'originalPrice', 'code', 'redeemedInStore', 'claimedAt', 'updatedAt'
+        ]) &&
+        data.userId is string && isValidId(data.userId) &&
+        data.offerId is string && isValidId(data.offerId) &&
+        data.businessName is string && data.businessName.size() >= 2 && data.businessName.size() <= 80 &&
+        data.neighborhood is string && data.neighborhood.size() >= 2 && data.neighborhood.size() <= 60 &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 120 &&
+        data.offerPrice is number && data.offerPrice >= 10 &&
+        data.originalPrice is number && data.originalPrice >= data.offerPrice &&
+        data.code is string && data.code.size() >= 4 && data.code.size() <= 24 && data.code.matches('^[A-Z0-9\\-]+$') &&
+        data.redeemedInStore is bool &&
+        data.claimedAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidLoyaltyCard(data) {
+      return data.keys().hasAll([
+          'userId', 'programId', 'businessName', 'neighborhood', 'category',
+          'visitsRequired', 'currentStamps', 'rewardTitle', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'programId', 'businessName', 'neighborhood', 'category',
+          'visitsRequired', 'currentStamps', 'rewardTitle', 'updatedAt'
+        ]) &&
+        data.userId is string && isValidId(data.userId) &&
+        data.programId is string && isValidId(data.programId) &&
+        data.businessName is string && data.businessName.size() >= 2 && data.businessName.size() <= 80 &&
+        data.neighborhood is string && data.neighborhood.size() >= 2 && data.neighborhood.size() <= 60 &&
+        data.category is string && isValidCategory(data.category) &&
+        data.visitsRequired is int && data.visitsRequired >= 2 && data.visitsRequired <= 10 &&
+        data.currentStamps is int && data.currentStamps >= 0 && data.currentStamps <= data.visitsRequired &&
+        data.rewardTitle is string && data.rewardTitle.size() >= 3 && data.rewardTitle.size() <= 120 &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidFeedback(data) {
+      return data.keys().hasAll([
+          'userId', 'roleAtSubmission', 'savesTimeAndMoney', 'willingToPay', 'comment', 'isPublic', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'roleAtSubmission', 'savesTimeAndMoney', 'willingToPay', 'comment', 'isPublic', 'createdAt'
+        ]) &&
+        data.userId is string && isValidId(data.userId) &&
+        data.roleAtSubmission in ['customer', 'owner'] &&
+        data.savesTimeAndMoney in ['yes', 'somewhat', 'no'] &&
+        data.willingToPay in ['pass_49', 'pay_per_deal', 'free_only', 'owner_499'] &&
+        data.comment is string && data.comment.size() <= 400 &&
+        data.isPublic is bool &&
+        data.createdAt is timestamp;
+    }
+
+    // Users Collection (PII Isolated to Owner)
+    match /users/{userId} {
+      allow get: if isVerified() && isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isVerified() && isValidId(userId) && isOwner(userId) &&
+        isValidUser(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(userId) && isOwner(userId) &&
+        isValidUser(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().email == existing().email &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'preferredRole', 'updatedAt']);
+      allow delete: if false;
+
+      // User Claims Subcollection (Master Gate + Terminal State Lock)
+      match /claims/{claimId} {
+        allow get: if isVerified() && isValidId(userId) && isValidId(claimId) && isOwner(userId);
+        allow list: if isVerified() && isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isVerified() && isValidId(userId) && isValidId(claimId) && isOwner(userId) &&
+          isValidClaim(incoming()) &&
+          incoming().userId == request.auth.uid &&
+          incoming().redeemedInStore == false &&
+          incoming().claimedAt == request.time &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          exists(/databases/$(database)/documents/offers/$(incoming().offerId));
+        allow update: if isVerified() && isValidId(userId) && isValidId(claimId) && isOwner(userId) &&
+          isValidClaim(incoming()) &&
+          existing().redeemedInStore == false &&
+          incoming().redeemedInStore == true &&
+          incoming().userId == existing().userId &&
+          incoming().offerId == existing().offerId &&
+          incoming().code == existing().code &&
+          incoming().claimedAt == existing().claimedAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['redeemedInStore', 'updatedAt']) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow delete: if isVerified() && isValidId(userId) && isValidId(claimId) && isOwner(userId);
+      }
+
+      // User Loyalty Stamp Cards Subcollection (Master Gate)
+      match /loyaltyCards/{programId} {
+        allow get: if isVerified() && isValidId(userId) && isValidId(programId) && isOwner(userId);
+        allow list: if isVerified() && isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isVerified() && isValidId(userId) && isValidId(programId) && isOwner(userId) &&
+          isValidLoyaltyCard(incoming()) &&
+          incoming().userId == request.auth.uid &&
+          incoming().programId == programId &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          exists(/databases/$(database)/documents/loyaltyPrograms/$(programId));
+        allow update: if isVerified() && isValidId(userId) && isValidId(programId) && isOwner(userId) &&
+          isValidLoyaltyCard(incoming()) &&
+          incoming().userId == existing().userId &&
+          incoming().programId == existing().programId &&
+          incoming().updatedAt == request.time &&
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['currentStamps', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['currentStamps', 'visitsRequired', 'rewardTitle', 'updatedAt'])
+          ) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow delete: if isVerified() && isValidId(userId) && isValidId(programId) && isOwner(userId);
+      }
+    }
+
+    // Dehradun Offers Collection
+    match /offers/{offerId} {
+      allow get: if isValidId(offerId) && (existing().active == true || (isVerified() && existing().ownerId == request.auth.uid));
+      allow list: if resource.data.active == true || (isVerified() && resource.data.ownerId == request.auth.uid);
+      allow create: if isVerified() && isValidId(offerId) &&
+        isValidOffer(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(offerId) &&
+        isValidOffer(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          (
+            existing().ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'active', 'title', 'description', 'originalPrice', 'offerPrice',
+              'validityLabel', 'targetAudience', 'updatedAt'
+            ])
+          ) ||
+          (
+            incoming().views == existing().views + 1 &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['views', 'updatedAt'])
+          ) ||
+          (
+            incoming().claims == existing().claims + 1 &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['claims', 'updatedAt'])
+          ) ||
+          (
+            incoming().whatsappShares == existing().whatsappShares + 1 &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['whatsappShares', 'updatedAt'])
+          )
+        );
+      allow delete: if isVerified() && isValidId(offerId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Shop Repeat-Visit Loyalty Programs
+    match /loyaltyPrograms/{programId} {
+      allow get: if isValidId(programId) && (existing().active == true || (isVerified() && existing().ownerId == request.auth.uid));
+      allow list: if resource.data.active == true || (isVerified() && resource.data.ownerId == request.auth.uid);
+      allow create: if isVerified() && isValidId(programId) &&
+        isValidLoyaltyProgram(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(programId) &&
+        isValidLoyaltyProgram(incoming()) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'businessName', 'neighborhood', 'category', 'visitsRequired',
+          'rewardTitle', 'active', 'updatedAt'
+        ]);
+      allow delete: if isVerified() && isValidId(programId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Validation Feedback (No PII)
+    match /feedback/{feedbackId} {
+      allow get: if isVerified() && isValidId(feedbackId) && (existing().isPublic == true || existing().userId == request.auth.uid);
+      allow list: if isVerified() && (resource.data.isPublic == true || resource.data.userId == request.auth.uid);
+      allow create: if isVerified() && isValidId(feedbackId) &&
+        isValidFeedback(incoming()) &&
+        incoming().userId == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isVerified() && isValidId(feedbackId) && existing().userId == request.auth.uid;
+    }
+  }
+}
